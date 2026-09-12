@@ -736,12 +736,12 @@ order_items 表（子实体）:
 
 ```yaml
 attributes:
-  - name: guestName
-    label: 客人姓名
+  - name: contractNo
+    label: 合同编号
     type: String
     required: true
     uiBindings:                    # 新增（可选）
-      - frmBooking.txtGuestName
+      - frmContract.txtContractNo
 ```
 
 ### 2.7.2  一致性约束（新增）
@@ -893,12 +893,12 @@ behaviors:
 
 ```yaml
 behaviors:
-  - id: Booking_SaveBooking
-    name: 保存预订
+  - id: Contract_SaveContract
+    name: 保存合同
     triggerType: USER_ACTION
     ...
     uiEventRefs:                    # 新增（可选）
-      - frmBooking.tbrMenu_ButtonClick.SAVE
+      - frmContract.tbrMenu_ButtonClick.SAVE
 ```
 
 ### 3.4.2  一致性约束（新增）
@@ -1333,11 +1333,11 @@ RULE-DELIVERY-001 配送条件检查规则
 
 ```yaml
 rules:
-  - id: RULE-BOOK-REQ-001
+  - id: RULE-CONTRACT-REQ-001
     ...
-    reusedBy: [Booking_SaveBooking]
+    reusedBy: [Contract_SaveContract]
     uiValidationRefs:               # 新增（可选）
-      - frmBooking.tbrMenu_ButtonClick.SAVE
+      - frmContract.tbrMenu_ButtonClick.SAVE
 ```
 
 ### 4.7.2  一致性约束（新增）
@@ -1897,10 +1897,10 @@ events:
 
 ```yaml
 events:
-  - eventId: Booking.Saved
+  - eventId: Contract.Saved
     ...
     uiEventPath:                    # 新增（可选）
-      - frmBooking.tbrMenu_ButtonClick.SAVE
+      - frmContract.tbrMenu_ButtonClick.SAVE
 ```
 
 ### 5.11.2  一致性约束（新增）
@@ -2042,9 +2042,9 @@ event_scenarios:
 
 ```yaml
 event_scenarios:
-  - id: SCN-BOOK-SAVE-001
+  - id: SCN-CONTRACT-SAVE-001
     ...
-    uiTriggerScreen: frmBooking     # 新增（可选）
+    uiTriggerScreen: frmContract     # 新增（可选）
 ```
 
 ### 6.6.2  一致性约束（新增）
@@ -2548,11 +2548,11 @@ M6中的稳定引用不得通过名称猜测。角色、行为、规则、事件
 ```yaml
 activities:
   - activityId: B03
-    name: 录入并计费
+    name: 录入合同并核算
     activityType: USER_TASK
-    roleRef: ROLE-CLERK
-    behaviorRef: Booking_SumTotal
-    screenRef: frmBooking           # 新增（可选）
+    roleRef: ROLE-CONTRACT-SPECIALIST
+    behaviorRef: Contract_SumTotal
+    screenRef: frmContract           # 新增（可选）
 ```
 
 ### 8.7.2  一致性约束（新增）
@@ -3406,7 +3406,7 @@ query_reports:
   - id: RPT-OFFICIAL-RECEIPT-001
     ...
     uiScreenRefs:                   # 新增（可选）
-      - frmBooking
+      - frmContract
       - frmReport
 ```
 
@@ -3456,7 +3456,7 @@ query_reports:
 | io | Enum | I（输入）/ O（输出）/ I_O（输入输出）；空表示纯展示 |
 | required | Boolean | 是否必填（与 M1 属性 `required` 对齐） |
 | enabled | Boolean | 默认可用性 |
-| dataBinding | FieldPath | 绑定的 M1 聚合属性路径，如 `Booking.guestName` |
+| dataBinding | FieldPath | 绑定的 M1 聚合属性路径，如 `Contract.customerName` |
 | dataSource | QueryReportRef | 列表/下拉型控件的数据来源（引用 M7 对象） |
 | permissionRef | PermissionRef[] | 控制可用/可见的 M5 权限 |
 | refRules | UIElementRule[] | 可选；控件级规则（掩码、格式、联动启用），仅限本元素内，不进入 M3 |
@@ -3473,7 +3473,7 @@ query_reports:
 
 | 属性名 | 类型 | 说明 |
 |--------|------|------|
-| eventId | String | 事件唯一标识，建议 `{screenId}.{控件事件}`，如 `frmBooking.tbrMenu_ButtonClick.SAVE` |
+| eventId | String | 事件唯一标识，建议 `{screenId}.{控件事件}`，如 `frmContract.tbrMenu_ButtonClick.SAVE` |
 | name | String | 事件业务名称 |
 | source | String | 触发源：控件事件（Click/KeyDown/LostFocus/Timer 等）与快捷键 |
 | permissions | PermissionRef[] | 可选；事件级授权（与元素 `permissionRef`、行为 `requiredPermissions` 联动） |
@@ -3515,83 +3515,95 @@ query_reports:
 # MU UI 模型元文件 - mu-ui-model.yaml
 model_type: UI
 version: "1.0"
-domain: "酒店客房预订管理"
+domain: "销售合同管理"
 
 screens:
-  - screenId: frmBooking
-    name: 客室预订
-    screenRef: basic-design-book-information/画面設計書_frmBooking_客室予約.md
+  - screenId: frmContract
+    name: 合同登记
+    screenRef: basic-design-contract-information/画面設計書_frmContract_合同登记.md
     layout: |                                # 新增（可选，ASCII 布局图，见 §10.6）
-      ┌──────────────────────────────────────────────────────────────┐
-      │ MFT-酒店客房预订系统                            [btnLogout]   │
-      ├──────────────────────────────────────────────────────────────┤
-      │ {tbrMenu}  CLOSE | CLEAR | SAVE | Check-IN | Check-OUT |     │
-      │              TEMPORARY | OFFICIAL                            │
-      ├──────────────────────────────────────────────────────────────┤
-      │ [区域: 客人信息]                                              │
-      │  客人姓名: [txtGuestName]     逗留天数: (cboStayDuration)    │
-      │  房间类型: (cboRoomType)      到店日期: (dtpArrive)          │
-      │  离店日期: (dtpDepart)        房价/晚: [txtRate]             │
-      ├──────────────────────────────────────────────────────────────┤
-      │ [区域: 预订明细]                                              │
-      │ @grdBooking                                                   │
-      │  客房 | 客人 | 到店 | 离店 | 晚数 | 金额 | 状态               │
-      ├──────────────────────────────────────────────────────────────┤
-      │ [区域: 合计]  金额: [txtTotal] 收款: [txtPaid] 找零: [txtChg] │
-      └──────────────────────────────────────────────────────────────┘
-
+      ┌────────────────────────────────────────────────────────────────────┐
+      │ 合同管理系统                                           [btnLogout] │
+      ├────────────────────────────────────────────────────────────────────┤
+      │ {tbrMenu}  CLOSE | CLEAR | SAVE | SUBMIT | ACTIVATE |              │
+      │              TEMPORARY | OFFICIAL                                  │
+      ├────────────────────────────────────────────────────────────────────┤
+      │ [区域: 合同基本信息]                                               │
+      │  合同编号: [txtContractNo]     合同名称: [txtContractName]         │
+      │  客户名称: [txtCustomerName]   责任人: (cboOwner)                  │
+      │  签订日期: (dtpSignDate)       生效日期: (dtpEffectiveDate)        │
+      │  到期日期: (dtpExpireDate)     合同金额: [txtAmount]               │
+      ├────────────────────────────────────────────────────────────────────┤
+      │ [区域: 合同标的明细]                                               │
+      │ @grdContractItem                                                   │
+      │  行号 | 标的名称 | 规格 | 数量 | 单价 | 金额                       │
+      ├────────────────────────────────────────────────────────────────────┤
+      │ [区域: 合计]                                                       │
+      │  合同总额: [txtTotal]    已收款: [txtPaid]    未收款: [txtUnpaid]  │
+      └────────────────────────────────────────────────────────────────────┘
     elements:
       - id: btnLogout
         type: BUTTON
         label: 退出
-      - id: txtGuestName
+      - id: txtContractNo
         type: TEXTBOX
-        label: 客人姓名
+        label: 合同编号
         io: I
         required: true
-        dataBinding: Booking.guestName        # -> M1
-      - id: cboStayDuration
+        dataBinding: Contract.contractNo       # -> M1
+      - id: txtContractName
+        type: TEXTBOX
+        label: 合同名称
+        io: I
+        required: true
+        dataBinding: Contract.contractName      # -> M1
+      - id: txtCustomerName
+        type: TEXTBOX
+        label: 客户名称
+        io: I
+        required: true
+        dataBinding: Contract.customerName      # -> M1
+      - id: cboOwner
         type: COMBO
         io: I_O
-        dataBinding: Booking.stayDuration
-        dataSource: QR-DURATION-OPTIONS        # -> M7（可选）
-      - id: cboRoomType
-        type: COMBO
-        io: I_O
-        dataBinding: Booking.roomType
-      - id: dtpArrive
+        dataBinding: Contract.ownerName
+        dataSource: QR-OWNER-OPTIONS            # -> M7（可选）
+      - id: dtpSignDate
         type: DATEPICKER
         io: I
         required: true
-        dataBinding: Booking.arriveDate
-      - id: dtpDepart
+        dataBinding: Contract.signDate
+      - id: dtpEffectiveDate
         type: DATEPICKER
         io: I
-        required: true
-        dataBinding: Booking.departDate
-      - id: txtRate
+        dataBinding: Contract.effectiveDate
+      - id: dtpExpireDate
+        type: DATEPICKER
+        io: I
+        dataBinding: Contract.expireDate
+      - id: txtAmount
         type: TEXTBOX
         io: I
-        dataBinding: Booking.rate
-      - id: grdBooking
+        dataBinding: Contract.totalAmount
+      - id: grdContractItem
         type: GRID
         io: O
-        dataBinding: Booking.items
+        dataBinding: Contract.items
       - id: txtTotal
         type: TEXTBOX
         io: O
-        dataBinding: Booking.totalAmount
+        dataBinding: Contract.totalAmount
       - id: txtPaid
         type: TEXTBOX
         io: O
-        dataBinding: Booking.paidAmount
-      - id: txtChg
+        dataBinding: Contract.receivedAmount
+      - id: txtUnpaid
         type: TEXTBOX
         io: O
-        dataBinding: Booking.changeAmount
+        dataBinding: Contract.unreceivedAmount
       - id: tbrMenu
         type: TOOLBAR
-        label: CLOSE | CLEAR | SAVE | Check-IN | Check-OUT | TEMPORARY | OFFICIAL
+        label: CLOSE | CLEAR | SAVE | SUBMIT | ACTIVATE | TEMPORARY | OFFICIAL
       - id: tmrClock
         type: TIMER
         description: 时钟与无操作超时监视
@@ -3603,28 +3615,28 @@ screens:
         trigger: 关闭 / Esc
 
     events:
-      - eventId: frmBooking.tbrMenu_ButtonClick.SAVE
-        name: 保存预订
+      - eventId: frmContract.tbrMenu_ButtonClick.SAVE
+        name: 保存合同
         source: 工具栏 SAVE / Ctrl+S
-        permissions: [PERM-BOOKING]           # -> M5
+        permissions: [PERM-CONTRACT-CREATE]     # -> M5
         callChain:
           - step: VALIDATE
-            rules: [RULE-BOOK-REQ-001, RULE-BOOK-DATE-002]   # -> M3
+            rules: [RULE-CONTRACT-REQ-001, RULE-CONTRACT-DATE-002]   # -> M3
           - step: BEHAVIOR_CALL
-            behaviorRef: Booking_SaveBooking  # -> M2
+            behaviorRef: Contract_SaveContract  # -> M2
           - step: EVENT_EMIT
-            eventRef: Booking.Saved           # -> ME
+            eventRef: Contract.Saved            # -> ME
           - step: SCENARIO_CALL
-            scenarioRef: SCN-BOOK-SAVE-001    # -> M4
+            scenarioRef: SCN-CONTRACT-SAVE-001  # -> M4
 
-      - eventId: frmBooking.tbrMenu_ButtonClick.TEMPORARY
-        name: 打印临时收据
+      - eventId: frmContract.tbrMenu_ButtonClick.TEMPORARY
+        name: 打印合同摘要
         source: 工具栏 TEMPORARY / Ctrl+F11
         callChain:
           - step: BEHAVIOR_CALL
-            behaviorRef: Booking_PrintReceipt # -> M2
+            behaviorRef: Contract_PrintSummary  # -> M2
           - step: REPORT_CALL
-            reportRef: RPT-TEMPORARY-RECEIPT-001  # -> M7
+            reportRef: RPT-CONTRACT-SUMMARY-001 # -> M7
           - step: NAVIGATE
             to: frmPrint
 
@@ -3632,7 +3644,7 @@ cross_cutting:
   - id: UI.IDLE_MONITOR
     name: 无操作超时监视
     description: 各业务画面 tmrClock 累计无操作秒数，超过用户 idle 上限后弹出登出确认
-    appliesTo: [frmBooking, frmDashboard, frmFindCustomer, frmModuleAccess, frmPrint, frmReport, frmReportMaintain, frmRoomMaintain, frmRoomTypeMaintain, frmUserMaintain]
+    appliesTo: [frmContract, frmDashboard, frmFindCustomer, frmModuleAccess, frmPrint, frmReport, frmReportMaintain, frmContractTypeMaintain, frmPaymentTermMaintain, frmUserMaintain]
     rules: [RULE-IDLE-TIMEOUT-001]
     target: frmDialog
 ```
@@ -3694,30 +3706,32 @@ ASCII 布局图是屏幕**结构化布局**的轻量表达，供设计评审、�
 | 默认交互序 | 可选；用 `->` 标注主要操作顺序（如 `[btnSave] -> @grdList`） |
 | 元素一致性 | 布局中出现的每个 elementId 必须存在于该屏幕 `elements`，且 `io`/`required` 标注与 `elements` 对齐 |
 
-### 10.6.3  绘制示例（frmBooking 客室预订）
+### 10.6.3  绘制示例（frmContract 合同登记）
 
 ```yaml
 screens:
-  - screenId: frmBooking
-    name: 客室预订
+  - screenId: frmContract
+    name: 合同登记
     layout: |
-      ┌──────────────────────────────────────────────────────────────┐
-      │ MFT-酒店客房预订系统                            [btnLogout]   │
-      ├──────────────────────────────────────────────────────────────┤
-      │ {tbrMenu}  CLOSE | CLEAR | SAVE | Check-IN | Check-OUT |     │
-      │              TEMPORARY | OFFICIAL                            │
-      ├──────────────────────────────────────────────────────────────┤
-      │ [区域: 客人信息]                                              │
-      │  客人姓名: [txtGuestName]     逗留天数: (cboStayDuration)    │
-      │  房间类型: (cboRoomType)      到店日期: (dtpArrive)          │
-      │  离店日期: (dtpDepart)        房价/晚: [txtRate]             │
-      ├──────────────────────────────────────────────────────────────┤
-      │ [区域: 预订明细]                                              │
-      │ @grdBooking                                                   │
-      │  客房 | 客人 | 到店 | 离店 | 晚数 | 金额 | 状态               │
-      ├──────────────────────────────────────────────────────────────┤
-      │ [区域: 合计]  金额: [txtTotal] 收款: [txtPaid] 找零: [txtChg] │
-      └──────────────────────────────────────────────────────────────┘
+      ┌────────────────────────────────────────────────────────────────────┐
+      │ 合同管理系统                                           [btnLogout] │
+      ├────────────────────────────────────────────────────────────────────┤
+      │ {tbrMenu}  CLOSE | CLEAR | SAVE | SUBMIT | ACTIVATE |              │
+      │              TEMPORARY | OFFICIAL                                  │
+      ├────────────────────────────────────────────────────────────────────┤
+      │ [区域: 合同基本信息]                                               │
+      │  合同编号: [txtContractNo]     合同名称: [txtContractName]         │
+      │  客户名称: [txtCustomerName]   责任人: (cboOwner)                  │
+      │  签订日期: (dtpSignDate)       生效日期: (dtpEffectiveDate)        │
+      │  到期日期: (dtpExpireDate)     合同金额: [txtAmount]               │
+      ├────────────────────────────────────────────────────────────────────┤
+      │ [区域: 合同标的明细]                                               │
+      │ @grdContractItem                                                   │
+      │  行号 | 标的名称 | 规格 | 数量 | 单价 | 金额                       │
+      ├────────────────────────────────────────────────────────────────────┤
+      │ [区域: 合计]                                                       │
+      │  合同总额: [txtTotal]    已收款: [txtPaid]    未收款: [txtUnpaid]  │
+      └────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 10.6.4  MFT 传输任务配置屏幕示例（逆向参考）
